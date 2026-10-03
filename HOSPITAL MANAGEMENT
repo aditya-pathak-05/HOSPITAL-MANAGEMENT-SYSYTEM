@@ -1,5 +1,5 @@
 import mysql.connector
-mycon=mysql.connector.connect(host='localhost',user='root',passwd='ENTER YOUR PASSWD HERE')
+mycon=mysql.connector.connect(host='localhost',user='root',passwd='ENTER YOUR PASSWD')
 if not mycon.is_connected():
     print("CONNECTION FAILED")
 cursor=mycon.cursor()
@@ -105,7 +105,7 @@ if cursor.fetchone()[0]==0:
 def report():
     a='Y'
     while a.upper() == 'Y':
-        pid=input("ENTER PATIENT'S ID WHOSE REPORT YOU WANT").upper()
+        pid=input("ENTER PATIENT'S ID WHOSE REPORT YOU WANT  ").upper()
         query= ('''SELECT 
         P.`PATIENT ID`, P.`PATIENT NAME`,P.`PATIENT AGE/SEX`,P.`CONTACT NUMBER`,
         A.`APPOINTMENT NO.`,A.`DOCTOR ID`,A.`APPOINTMENT DATE`,A.`NEXT APPOINTMENT DATE`,
@@ -132,7 +132,7 @@ def report():
             print("BILL ID               :", report[0][8])
             print("AMOUNT                :", report[0][9])
             print("PAYMENT STATUS        :", report[0][10])
-        a=input("DO YOU WANT TO SEE ANY OTHER REPORT TOO? Y/N")
+        a=input("DO YOU WANT TO SEE ANY OTHER REPORT TOO? Y/N  ")
 #2 ADD DOCTORS.
 def adddoc(): 
     c='Y'
@@ -141,10 +141,10 @@ def adddoc():
         doclist=cursor.fetchall()
         for i in doclist:
             print(i)
-        docid=input("ENTER ID ASSINGED TO THE DOCTOR").upper()
-        docname=input("ENTER NAME OF THE DOCTOR").upper()
-        docdep=input("ENTER DEPARTMENT OF DOCTOR").upper()
-        availdays=input("ENTER DAYS WHEN THE DOCTOR WILL BE AVAILABLE").upper()
+        docid=input("ENTER ID ASSINGED TO THE DOCTOR  ").upper()
+        docname=input("ENTER NAME OF THE DOCTOR  ").upper()
+        docdep=input("ENTER DEPARTMENT OF DOCTOR  ").upper()
+        availdays=input("ENTER DAYS WHEN THE DOCTOR WILL BE AVAILABLE  ").upper()
         query=("INSERT INTO DOCTORS (`DOCTOR ID`,`DOCTOR NAME`, DEPARTMENT,`DAYS OF AVAILABILITY`) VALUES(%s,%s,%s,%s)")
         data=(docid,docname,docdep,availdays)
         cursor.execute(query,data)
@@ -164,7 +164,7 @@ def removedoc():
         cursor.execute(query2,(docid2,))
         mycon.commit()
         print("DOCTOR REMOVED SUCCESSFULLY")
-        d=input("DO YOU WANT TO REMOVE MORE DOCTORS? Y/N")                
+        d=input("DO YOU WANT TO REMOVE MORE DOCTORS? Y/N").upper()                
 #4 ADD NEW PATIENT
 def addnewpat():
     pref='Y'
@@ -173,43 +173,186 @@ def addnewpat():
         deplist=cursor.fetchall()
         for i in deplist:
             print(i)
-        patid=input("ENTER PATIENT ID").upper()
-        patname=input("ENTER PATIENT'S NAME").upper()
-        patagesex=input("ENTER AGE/SEX OF PATIENT").upper()
-        contact=int(input("ENTER CONTACT NUMBER OF PATIENT"))
-        dep=input("ENTER DEPARTMENT OF PATIENT").upper()
-        lastvisit=input("ENTER THE LAST DATE VISITED YYYY-MM-DD OR PRESS ENTER TO SKIP").strip() or None
-        remarks=(input("ENTER ANY REMARKS IF ANY OR PRESS ENTER TO SKIP").strip()).upper() or None
+        patid=input("ENTER PATIENT ID AS 'P'_(FIRST 4 LETTERS OF DEPARTMENT)_(QUEUE NO)  ").upper()
+        patname=input("ENTER PATIENT'S NAME  ").upper()
+        patagesex=input("ENTER AGE/SEX OF PATIENT  ").upper()
+        contact=int(input("ENTER CONTACT NUMBER OF PATIENT  "))
+        dep=input("ENTER DEPARTMENT OF PATIENT  ").upper()
+        lastvisit=input("ENTER THE LAST DATE VISITED YYYY-MM-DD OR PRESS ENTER TO SKIP  ").strip() or None
+        remarks=(input("ENTER ANY REMARKS IF ANY OR PRESS ENTER TO SKIP  ").strip()).upper() or None
         query="INSERT INTO PATIENTS(`PATIENT ID`,`PATIENT NAME`,`PATIENT AGE/SEX`,`CONTACT NUMBER`,DEPARTMENT,`LAST VISIT`,REMARKS) VALUES(%s,%s,%s,%s,%s,%s,%s)"
         data=(patid,patname,patagesex,contact,dep,lastvisit,remarks)
         cursor.execute(query,data)
         mycon.commit()
         print("PATIENT ADDED SUCCESSFULLY")
         pref=input("DO YOU WANT TO ADD MORE PATIENTS? Y/N").upper()
+#5 GIVE AN APPOINTMENT TO THE PATIENT
+def giveapp():
+    c='Y'
+    while c == 'Y':
+        patid=input("ENTER PATIENT ID OF THE PATIENT  ").upper()
+        query5=("SELECT `PATIENT ID` FROM PATIENTS WHERE `PATIENT ID`= %s")
+        cursor.execute(query5,(patid,))
+        patlist=cursor.fetchall()
+        if patid not in patlist[0]:
+            print("FIRST ADD THIS PATIENT IN PATIENT TABLE")
+        else:
+            dep=input("ENTER THE DEPARTMENT IN WHICH PATIENT WANTS TO CONSULT  ").upper()
+            day=input("ENTER THE DAY WHEN YOU WANT TO CONSULT  ").upper()
+            query="SELECT * FROM DOCTORS WHERE DEPARTMENT =%s AND `DAYS OF AVAILABILITY` LIKE %s"
+            cursor.execute(query,(dep,f"%{day}%"))
+            doc= cursor.fetchall()
+            if not doc:
+                print("NO DOCTOR AVAILABLE. PLEASE SELECT ANOTHER DAY")
+                continue
+            else:
+                print("THE AVAILABLE DOCTORS IN YOUR REQUIRED DEPARTMENT ARE:  ")
+                for i in doc:
+                    print(i)
+            docid=input("ENTER DOCTOR'S ID WHO IS AVAILABLE  ").upper()
+            query2="SELECT `APPOINTMENT NO.` FROM APPOINTMENTS WHERE `DOCTOR ID` LIKE %s"
+            cursor.execute(query2,(docid,))
+            data2=cursor.fetchall()
+            for i in data2:
+                print(i)
+            appno=input("ENTER VALID APPOINTMENT NO. (FORMATE: 'APP'_DEP(FIRST 4 LETTERS)_(QUEUE NO OF PATIENT)  ").upper()
+            appdate=input("ENTER APPOINTMENT DATE YYYY-MM-DD  ").strip() or None
+            nextappdate=input("ENTER next APPOINTMENT DATE YYYY-MM-DD  ").strip() or None
+            query3="INSERT INTO APPOINTMENTS(`APPOINTMENT NO.`,`PATIENT ID`,`DOCTOR ID`,`APPOINTMENT DATE`, `NEXT APPOINTMENT DATE`) VALUES (%s,%s,%s,%s,%s)"
+            data3=(appno,patid,docid,appdate,nextappdate)
+            cursor.execute(query3,data3)
+            query4="INSERT INTO BILL(`BILL ID`, `PATIENT ID`, AMOUNT, `PAYMENT STATUS`) VALUES (%s,%s,%s,%s)"
+            billid='B'+dep[0:4]+input("ENTER QUEUE NO. OF PATIENT ").upper()
+            amt=int(input("ENTER BILL AMOUNT  "))
+            ps=(input("ENTER PAYMENT STATUS (PAID/UNPAID)  ").strip()).upper()
+            data4=(billid, patid, amt, ps)
+            cursor.execute(query4,data4)
+            mycon.commit()
+            print(patid,"GOT AN APPOINTMENT WITH APPOINTMENT NO", appno)
+            c=input("DO YOU WANT TO GIVE MORE APPOINTMENTS? Y/N  ").upper()
+#6 ADD NEXT APPOINTMENT DATE OF EXISTING PATIENT
+def addnextappdate():
+    x='Y'
+    while x=='Y':
+        patid=input("ENTER PATIENT ID  ").upper()
+        query="SELECT * FROM APPOINTMENTS WHERE `PATIENT ID`=%s"
+        data=(patid,)
+        cursor.execute(query,data)
+        patlist=cursor.fetchall()
+        print("\n"+"="*50)
+        print("          PATIENT'S APPOINTMENT STATUS")
+        print("="*50)
+        print("APPOINTMENT NO.          :",patlist[0][0])
+        print("PATIENT ID               :",patlist[0][1])
+        print("DOCTOR ID                :",patlist[0][2])
+        print("APPOINTMENT DATE         :",patlist[0][3])
+        print("NEXT APPOINTMENT DATE    :",patlist[0][4])
+        newappdate=input("ENTER NEW APPOINTMENT DATE YYYY-MM-DD  ")
+        query2="UPDATE APPOINTMENTS SET `NEXT APPOINTMENT DATE`=%s WHERE `PATIENT ID` = %s"
+        data2=(newappdate,patid)
+        cursor.execute(query2,data2)
+        mycon.commit()
+        query3="SELECT * FROM APPOINTMENTS WHERE `PATIENT ID`=%s"
+        data3=(patid,)
+        cursor.execute(query3,data3)
+        patlist1=cursor.fetchall()
+        print("\n"+"="*50)
+        print("        UPDATED PATIENT'S APPOINTMENT STATUS")
+        print("="*50)
+        print("APPOINTMENT NO.          :",patlist1[0][0])
+        print("PATIENT ID               :",patlist1[0][1])
+        print("DOCTOR ID                :",patlist1[0][2])
+        print("APPOINTMENT DATE         :",patlist1[0][3])
+        print("NEXT APPOINTMENT DATE    :",patlist1[0][4])
+        x=input("DO YOU WANT TO CHANGE MORE APPOINTMENT DATES? Y/N  ").upper()
+#7 UPDATE BILLING AMOUNT
+def updatebillamt():
+    y='Y'
+    while y=='Y':
+        patid=input("ENTER PATIENT ID   ").upper()
+        cursor.execute("SELECT * FROM BILL WHERE `PATIENT ID`=%s",(patid,))
+        data=cursor.fetchall()
+        print("\n"+"="*40)
+        print("          OLD HEALTHCARE BILL ")
+        print("="*40)
+        print("BILL ID         :",data[0][0])
+        print("PATIENT ID      :",data[0][1])
+        print("AMOUNT          :",data[0][2])
+        print("PAYMENT STATUS  :",data[0][3])
+        billid=input("ENTER BILL ID  ").upper()
+        amount=int(input("ENTER NEW BILL AMOUNT  "))
+        query2="UPDATE BILL SET `AMOUNT`=%s WHERE `BILL ID`=%s"
+        data2=(amount,billid)
+        cursor.execute(query2,data2)
+        mycon.commit()
+        cursor.execute("SELECT * FROM BILL WHERE `PATIENT ID`=%s",(patid,))
+        data3=cursor.fetchall()
+        print("\n"+"="*40)
+        print("          HEALTHCARE BILL ")
+        print("="*40)
+        print("BILL ID         :",data3[0][0])
+        print("PATIENT ID      :",data3[0][1])
+        print("AMOUNT          :",data3[0][2])
+        print("PAYMENT STATUS  :",data3[0][3])
+        y=input("DO YOU WANT TO UPDATE MORE BILL AMOUNT? Y/N  ").upper() 
+#8 UPDATE BILLING STATUS
+def updatebillstatus():
+    y="Y"
+    while y=='Y':
+        patid=input("ENTER PATIENT ID   ").upper()
+        cursor.execute("SELECT * FROM BILL WHERE `PATIENT ID`=%s",(patid,))
+        data=cursor.fetchall()
+        print("\n"+"="*40)
+        print("          OLD HEALTHCARE BILL ")
+        print("="*40)
+        print("BILL ID         :",data[0][0])
+        print("PATIENT ID      :",data[0][1])
+        print("AMOUNT          :",data[0][2])
+        print("PAYMENT STATUS  :",data[0][3])
+        billid=input("ENTER BILL ID  ").upper()
+        billstatus=input("ENTER NEW BILL STATUS  ").upper()
+        query2="UPDATE BILL SET `PAYMENT STATUS`=%s WHERE `BILL ID`=%s"
+        data2=(billstatus,billid)
+        cursor.execute(query2,data2)
+        mycon.commit()
+        cursor.execute("SELECT * FROM BILL WHERE `PATIENT ID`=%s",(patid,))
+        data3=cursor.fetchall()
+        print("\n"+"="*40)
+        print("       NEW HEALTHCARE BILL ")
+        print("="*40)
+        print("BILL ID         :",data3[0][0])
+        print("PATIENT ID      :",data3[0][1])
+        print("AMOUNT          :",data3[0][2])
+        print("PAYMENT STATUS  :",data3[0][3])
+        y=input("DO YOU WANT TO UPDATE MORE BILL STATUS? Y/N  ").upper()
 # EMERGENCY PATIENT MANAGEMENT
-#5 ADD PATIENT TO EMERGENCY QUEUE
+#9 ADD PATIENT TO EMERGENCY QUEUE
 def addpatinem():
     c='Y'
     while c.upper() == 'Y':
         cursor.execute("SELECT STATUS,`SEVERITY(1,2,3)`, COUNT(*) AS `TOTAL PATIENTS IN THE QUEUE` FROM `EMERGENCY TRIAGE` WHERE STATUS='WAITING' GROUP BY STATUS,`SEVERITY(1,2,3)`")
         list=cursor.fetchall()
-        for i in list:
-            print(i)
-        queueid=input('ENTER PATIENT ID').upper()
+        for i in range(0,len(list)):
+            print("\n"+"="*40)
+            print("          CURRENT WAITING LIST")
+            print("STATUS           :",list[i][0])
+            print("SEVERITY         :",list[i][1])
+            print("TOTAL PATIENTS   :",list[i][2])
+        queueid=input('ENTER PATIENT ID FORMAT EM_YYYY_MM_DD_(QUEUE NO)  ').upper()
         patname=input("ENTER PATIENT'S NAME").upper()
         contact=int(input("ENTER CONTACT NO. OF PATIENT"))
         print('''SEVERITY- 1: CRITICAL
             2: EMERGENCY
             3: NORMAL''')
-        severity=int(input("ENTER SEVERITY NUMBER OF PATIENT DESCRIBED ABOVE"))
-        date=input("ENTER DATE OF VISIT: YYYY-MM-DD")
+        severity=int(input("ENTER SEVERITY NUMBER OF PATIENT DESCRIBED ABOVE  "))
+        date=input("ENTER DATE OF VISIT: YYYY-MM-DD  ")
         query="INSERT INTO `EMERGENCY TRIAGE`(`QUEUE ID`,`PATIENT NAME`,`CONTACT NUMBER`,`SEVERITY(1,2,3)`,DATE) VALUES (%s,%s,%s,%s,%s)"
         data=(queueid,patname,contact,severity,date)
         cursor.execute(query,data)
         mycon.commit()
         print( queueid," ADDED IN EMERGENCY QUEUE HAVING SEVERITY:",severity)
         c=input("DO YOU WANT TO ADD MORE PATIENTS? Y/N")
-#6 CURRENT WAITING QUEUE
+#10 CURRENT WAITING QUEUE
 def queue():
     query="SELECT * FROM `EMERGENCY TRIAGE` WHERE STATUS='WAITING' ORDER BY `SEVERITY(1,2,3)` ASC,`QUEUE ID` ASC"
     cursor.execute(query)
@@ -221,16 +364,13 @@ def queue():
         print("          CURRENT WAITING LIST          ")
         print("="*40)
         for i in range(0,len(queue)):
-           # print("\n"+"="*40)
-            #print("          CURRENT WAITING LIST          ")
-            #print("="*40)
             print("QUEUE ID             :",queue[i][0])
             print("PATIENT NAME         :",queue[i][1])
             print("CONTACT NUMBER       :",queue[i][2])
-            print("DATE OF APPOINTMENT  :",queue[i][3])
-            print("STATUS               :",queue[i][4])
+            print("SEVERITY             :",queue[i][3])
+            print("DATE                 :",queue[i][4])
             print("="*40)
-#7 TREAT NEXT PATIENT
+#11 TREAT NEXT PATIENT
 def nextpatinem():
     cursor.execute("SELECT `QUEUE ID`,`PATIENT NAME`,`SEVERITY(1,2,3)` FROM `EMERGENCY TRIAGE` WHERE STATUS='WAITING' ORDER BY `SEVERITY(1,2,3)` ASC,`QUEUE ID` ASC LIMIT 1")
     patlist=cursor.fetchone()
@@ -247,20 +387,20 @@ def nextpatinem():
         cursor.execute(UPDATEQUERY,(QUEUEID,))
         mycon.commit()
         print(QUEUEID, "HAS BEEN TREATED AND REMOVED FROM EMERGENCY TRIAGE")
-#8 DOCTOR AVAILABILITY
+#12 DOCTOR AVAILABILITY
 def docavail():
     c="Y"
     query=("SELECT DISTINCT DEPARTMENT FROM DOCTORS ")
     cursor.execute(query)
     dep=cursor.fetchall()
     print("\n"+"="*40)
-    print("LIST  OF DEPARTMENTS")
+    print("          LIST  OF DEPARTMENTS")
     print("="*40)
     for i in dep:
         print(i)
     while c.upper()=="Y":
-        dep=input("ENTER DEPARTMENT IN WHICH YOU HAVE TO CONSULT THE DOCTOR").upper()
-        day=input("ENTER THE DAY WHEN YOU WANT TO CONSULT").upper()
+        dep=input("ENTER DEPARTMENT IN WHICH YOU HAVE TO CONSULT THE DOCTOR  ").upper()
+        day=input("ENTER THE DAY WHEN YOU WANT TO CONSULT  ").upper()
         query="SELECT * FROM DOCTORS WHERE DEPARTMENT=%s AND `DAYS OF AVAILABILITY` LIKE %s"
         cursor.execute(query,(dep,f"%{day}%"))
         doc= cursor.fetchall()
@@ -270,20 +410,24 @@ def docavail():
             print("THE AVAILABLE DOCTORS IN YOUR REQUIRED DEPARTMENT ARE: ")
             for i in doc:
                 print(i)
-            c=input("DO YOU WANT TO CHECK ANY OTHER DOCTOR? Y/N")
+            c=input("DO YOU WANT TO CHECK ANY OTHER DOCTOR? Y/N  ")
 # MAIN APPLICATON CLI
 def main():
     while True:
-        a=int(input(''' ========== HOSPITAL MANAGEMENT SYSTEM==========
+        a=int(input(''' =============== HOSPITAL MANAGEMENT SYSTEM===============
         1. SHOW PATIENTS REPORT
         2. ADD DOCTORS
         3. REMOVE DOCTORS
         4. ADD NEW PATIENTS
-        5. EMERGENCY QUEUE: ADD A PATIENT 
-        6. EMERGENCY QUEUE: CURRENT WAITING LIST
-        7. EMERGENCY QUEUE: TREAT NEXT PATIENT
-        8. CHECK AVAILABLE DOCTORS
-        9. EXIT HOSPITAL MANAGEMENT SYSTEM
+        5. GIVE AN APPOINTMENT TO THE PATIENT
+        6. ADD NEXT APPOINTMENT DATE OF EXISTING PATIENT
+        7. UPDATE BILL AMOUNT
+        8. UPDATE BILLING STATUS
+        9. EMERGENCY QUEUE: ADD A PATIENT 
+        10. EMERGENCY QUEUE: CURRENT WAITING LIST
+        11. EMERGENCY QUEUE: TREAT NEXT PATIENT
+        12. CHECK AVAILABLE DOCTORS
+        13. EXIT HOSPITAL MANAGEMENT SYSTEM
         '''))
         if a==1:
             report()
@@ -294,14 +438,22 @@ def main():
         elif a==4:
             addnewpat()
         elif a==5:
-            addpatinem()
+            giveapp()
         elif a==6:
-            queue()
+            addnextappdate()
         elif a==7:
-            nextpatinem()
+            updatebillamt()
         elif a==8:
-            docavail()
+            updatebillstatus()
         elif a==9:
+            addpatinem()
+        elif a==10:
+            queue()
+        elif a==11:
+            nextpatinem()
+        elif a==12:
+            docavail()
+        elif a==13:
             print("========== EXITING HOSPITAL MANAGEMENT SYSTEM... CLOSING DATABASE CONNECTION==========")
             break
         else:
