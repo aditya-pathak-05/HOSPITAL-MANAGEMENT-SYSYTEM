@@ -462,26 +462,3 @@ def main():
     mycon.close()
     print("==========DATABASE CONNECTION CLOSED SUCCESSFULLY==========")
 main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-        
-        
-
-
-
