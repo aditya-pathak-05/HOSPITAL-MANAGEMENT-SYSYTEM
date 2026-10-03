@@ -1,5 +1,5 @@
 import mysql.connector
-mycon=mysql.connector.connect(host='localhost',user='root',passwd='ENTER YOUR PASSWD')
+mycon=mysql.connector.connect(host='localhost',user='root',passwd='adi05tya')
 if not mycon.is_connected():
     print("CONNECTION FAILED")
 cursor=mycon.cursor()
@@ -341,7 +341,7 @@ def addpatinem():
         queueid=input('ENTER PATIENT ID FORMAT EM_YYYY_MM_DD_(QUEUE NO)  ').upper()
         patname=input("ENTER PATIENT'S NAME").upper()
         contact=int(input("ENTER CONTACT NO. OF PATIENT"))
-        print('''SEVERITY- 1: CRITICAL
+        print('''SEVERITY-   1: CRITICAL
             2: EMERGENCY
             3: NORMAL''')
         severity=int(input("ENTER SEVERITY NUMBER OF PATIENT DESCRIBED ABOVE  "))
